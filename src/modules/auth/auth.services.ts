@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { IUserRepo, IAuthServices } from "../../common";
+import { IUserRepo, IAuthServices, IPayload } from "../../common";
 import { UserRepo } from "../../DB";
 import { loginDTO, registerDTO } from "./auth.DTO";
 import {
@@ -56,7 +56,12 @@ export default class AuhtServices implements IAuthServices {
       throw new ApplicationException("Invalid password", 401);
     }
 
-    const { accessToken, refreshToken } = generateToken({ payload: user });
+    const payload: Partial<IPayload> = {
+      id: user._id.toString(),
+      role: user.role,
+    };
+
+    const { accessToken, refreshToken } = generateToken({ payload });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -73,4 +78,14 @@ export default class AuhtServices implements IAuthServices {
       status: 200,
     });
   };
+
+    me = async (req: Request, res: Response): Promise<Response> => {
+      const {password, ...rest} = res.locals.user.toObject();
+      return successHandler({
+        res,
+        msg: "User fetched successfully",
+        data: rest,
+        status: 200,
+      });
+    };
 }
