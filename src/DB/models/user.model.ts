@@ -1,17 +1,6 @@
 import { model, Schema } from "mongoose";
-import { IOtp, IUser, UserRole } from "../../common";
+import {IUser, UserRole } from "../../common";
 
-const otpSchema = new Schema<IOtp>(
-  {
-    otp: { type: String },
-    expiresAt: { type: Date },
-    attempts: { count: { type: Number, default: 0 }, banExp: { type: Date } },
-    request: { count: { type: Number, default: 0 }, banExp: { type: Date } },
-  },
-  {
-    _id: false,
-  },
-);
 
 const userSchema = new Schema<IUser>(
   {
@@ -62,15 +51,6 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: Object.values(UserRole),
       default: UserRole.USER,
-    },
-
-    otp: {
-      type: otpSchema,
-    },
-
-    isConfirmed: {
-      type: Boolean,
-      default: false,
     },
 
     changedCredentialsAt: Date,
