@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { IBooking } from "../../common";
+import { BookingStatus, IBooking } from "../../common";
 
 const bookingSchema = new Schema<IBooking>(
   {
@@ -26,8 +26,8 @@ const bookingSchema = new Schema<IBooking>(
     },
     status: {
       type: String,
-      enum: ["pending", "confirmed", "cancelled"],
-      default: "pending",
+      enum: Object.values(BookingStatus),
+      default: BookingStatus.PENDING,
     },
   },
   {
@@ -35,5 +35,5 @@ const bookingSchema = new Schema<IBooking>(
   },
 );
 
-const Booking = model<IBooking>("Booking", bookingSchema);
-export default Booking;
+export const Booking = model<IBooking>("Booking", bookingSchema);
+

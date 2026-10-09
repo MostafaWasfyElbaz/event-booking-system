@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 import { EventLocation } from "../../enums";
-import { EventStatus } from "../../enums/events/event.status";
+import { EventStatus } from "../../enums";
 
 export interface IEvent {
   _id: Types.ObjectId;

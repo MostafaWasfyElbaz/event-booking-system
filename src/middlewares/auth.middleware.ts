@@ -59,7 +59,7 @@ export const decodeToken = async ({
 
     return { user, decodedToken };
   } catch (error) {
-    throw new ApplicationException("Failed to decode token", 401);
+    throw error
   }
 };
 

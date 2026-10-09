@@ -1,6 +1,6 @@
 import { model, Schema } from "mongoose";
 import { EventLocation, IEvent } from "../../common";
-import { EventStatus } from "../../common/enums/events/event.status";
+import { EventStatus } from "../../common/enums";
 
 const eventSchema = new Schema<IEvent>(
   {
@@ -10,6 +10,7 @@ const eventSchema = new Schema<IEvent>(
       trim: true,
       minlength: [3, "Title must be at least 3 characters"],
       maxlength: [50, "Title cannot exceed 50 characters"],
+      index:true
     },
 
     description: {
@@ -26,6 +27,7 @@ const eventSchema = new Schema<IEvent>(
       trim: true,
       minlength: [3, "Category must be at least 3 characters"],
       maxlength: [50, "Category cannot exceed 50 characters"],
+      index:true
     },
 
     locationType: {
@@ -45,6 +47,7 @@ const eventSchema = new Schema<IEvent>(
     startDate: {
       type: Date,
       required: [true, "Start date is required"],
+      index:true
     },
 
     endDate: {
@@ -62,6 +65,7 @@ const eventSchema = new Schema<IEvent>(
       type: Number,
       required: [true, "Price is required"],
       min: [0, "Price cannot be negative"],
+      index:true
     },
 
     organizerId: {
@@ -74,6 +78,7 @@ const eventSchema = new Schema<IEvent>(
       type: String,
       required: [true, "Status is required"],
       enum: Object.values(EventStatus),
+      index:true
     },
   },
   {
@@ -81,5 +86,4 @@ const eventSchema = new Schema<IEvent>(
   },
 );
 
-const Event = model<IEvent>("Event", eventSchema);
-export default Event;
+export const Event = model<IEvent>("Event", eventSchema);

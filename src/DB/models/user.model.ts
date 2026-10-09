@@ -9,7 +9,7 @@ const userSchema = new Schema<IUser>(
       required: [true, "Name is required"],
       trim: true,
       minlength: [3, "Name must be at least 3 characters"],
-      maxlength: [20, "Name cannot exceed 20 characters"],
+      maxlength: [30, "Name cannot exceed 30 characters"],
       match: [/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"],
     },
 
@@ -31,10 +31,6 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters"],
-      match: [
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-      ],
     },
 
     phone: {
@@ -62,4 +58,3 @@ const userSchema = new Schema<IUser>(
 
 export const User = model<IUser>("User", userSchema);
 
-export default User;

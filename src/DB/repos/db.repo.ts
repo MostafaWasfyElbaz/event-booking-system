@@ -2,13 +2,16 @@ import {
   CreateOptions,
   DeleteResult,
   FilterQuery,
+  FlattenMaps,
   HydratedDocument,
   Model,
+  PipelineStage,
   ProjectionType,
   QueryOptions,
   UpdateQuery,
   UpdateResult,
 } from "mongoose";
+import { AggregateOptions } from "node:sqlite";
 
 export default abstract class DBRepository<T> {
   constructor(protected readonly model: Model<T>) {}
@@ -100,5 +103,16 @@ export default abstract class DBRepository<T> {
     options?: Record<string, any>;
   }): Promise<DeleteResult> => {
     return await this.model.deleteMany(filter, options);
+  };
+
+  aggregate =  ({
+    pipeline,
+    options,
+  }: {
+    pipeline: PipelineStage[];
+    options?: AggregateOptions;
+  }) => {
+    const doc = this.model.aggregate(pipeline, options);
+    return doc;
   };
 }

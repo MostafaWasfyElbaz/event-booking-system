@@ -14,4 +14,5 @@ export default class UserRepo extends DBRepository<IUser> implements IUserRepo {
     const user = await this.findOne({ filter: { email } });
     return user;
   };
+
 }
