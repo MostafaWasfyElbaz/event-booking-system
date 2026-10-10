@@ -26,12 +26,11 @@ export interface IBookingRepo extends DBRepository<IBooking> {
     bookingId,
     userId,
     eventId,
-    quantity
+    quantity,
   }: {
     bookingId: string;
     userId: string;
     eventId: string;
     quantity: number;
   }) => Promise<void>;
-
 }

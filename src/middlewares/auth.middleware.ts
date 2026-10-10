@@ -59,14 +59,14 @@ export const decodeToken = async ({
 
     return { user, decodedToken };
   } catch (error) {
-    throw error
+    throw error;
   }
 };
 
 export const auth = ({
   tokenType = TokenType.ACCESS,
   roles = [],
-}: { tokenType?: TokenType, roles?: UserRole[] } = {}) => {
+}: { tokenType?: TokenType; roles?: UserRole[] } = {}) => {
   return async (
     req: Request,
     res: Response,
@@ -76,7 +76,7 @@ export const auth = ({
       const { user }: { user: HydratedDocument<IUser> } = await decodeToken({
         authorization: req.headers.authorization as string,
         tokenType,
-        roles
+        roles,
       });
       res.locals.user = user;
       next();

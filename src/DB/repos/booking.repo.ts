@@ -104,13 +104,13 @@ export default class BookingsRepo
     bookingId,
     userId,
     eventId,
-    quantity
+    quantity,
   }: {
     bookingId: string;
     userId: string;
     eventId: string;
-    quantity: number
-  }):Promise<void> => {
+    quantity: number;
+  }): Promise<void> => {
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
@@ -125,13 +125,10 @@ export default class BookingsRepo
           },
           options: { new: true, ...(session && { session }) },
         });
-         if (!booking) {
-        throw new ApplicationException(
-          "Booking could not be cancelled",
-          409,
-        );
-      }
-       await this.eventRepo.cancelSeats({eventId,quantity,session})
+        if (!booking) {
+          throw new ApplicationException("Booking could not be cancelled", 409);
+        }
+        await this.eventRepo.cancelSeats({ eventId, quantity, session });
       });
     } catch (error) {
       error;

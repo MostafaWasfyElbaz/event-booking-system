@@ -10,7 +10,7 @@ const eventSchema = new Schema<IEvent>(
       trim: true,
       minlength: [3, "Title must be at least 3 characters"],
       maxlength: [50, "Title cannot exceed 50 characters"],
-      index:true
+      index: true,
     },
 
     description: {
@@ -27,7 +27,7 @@ const eventSchema = new Schema<IEvent>(
       trim: true,
       minlength: [3, "Category must be at least 3 characters"],
       maxlength: [50, "Category cannot exceed 50 characters"],
-      index:true
+      index: true,
     },
 
     locationType: {
@@ -47,7 +47,7 @@ const eventSchema = new Schema<IEvent>(
     startDate: {
       type: Date,
       required: [true, "Start date is required"],
-      index:true
+      index: true,
     },
 
     endDate: {
@@ -62,17 +62,17 @@ const eventSchema = new Schema<IEvent>(
     },
 
     bookedSeats: {
-  type: Number,
-  required: true,
-  default: 0,
-  min: [0, "Booked seats cannot be negative"],
-},
+      type: Number,
+      required: true,
+      default: 0,
+      min: [0, "Booked seats cannot be negative"],
+    },
 
     price: {
       type: Number,
       required: [true, "Price is required"],
       min: [0, "Price cannot be negative"],
-      index:true
+      index: true,
     },
 
     organizerId: {
@@ -85,7 +85,7 @@ const eventSchema = new Schema<IEvent>(
       type: String,
       required: [true, "Status is required"],
       enum: Object.values(EventStatus),
-      index:true
+      index: true,
     },
   },
   {

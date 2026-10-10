@@ -1,6 +1,5 @@
 import { model, Schema } from "mongoose";
-import {IUser, UserRole } from "../../common";
-
+import { IUser, UserRole } from "../../common";
 
 const userSchema = new Schema<IUser>(
   {
@@ -57,4 +56,3 @@ const userSchema = new Schema<IUser>(
 );
 
 export const User = model<IUser>("User", userSchema);
-

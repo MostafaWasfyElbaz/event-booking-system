@@ -5,6 +5,7 @@ import {
   createEventSchema,
   EventIdSchema,
   getAllEventsSchema,
+  updateEventSchema,
 } from "./events.validation";
 import EventsServices from "./events.services";
 const router = Router();
@@ -36,6 +37,13 @@ router.get(
   validationMiddleware(EventIdSchema),
   auth({ roles: [UserRole.ADMIN, UserRole.ORGANIZER] }),
   eventsService.getEventBookings,
+);
+
+router.patch(
+  "/:id",
+  validationMiddleware(updateEventSchema),
+  auth({ roles: [UserRole.ADMIN, UserRole.ORGANIZER] }),
+  eventsService.updateEvent,
 );
 
 router.delete(

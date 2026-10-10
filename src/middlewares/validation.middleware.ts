@@ -19,4 +19,3 @@ export const validationMiddleware = (schema: z.ZodSchema) => {
     next();
   };
 };
-

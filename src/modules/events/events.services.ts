@@ -9,7 +9,12 @@ import {
   UserRole,
 } from "../../common";
 import { BookingRepo, EventsRepo } from "../../DB";
-import { createEventDTO, getAllEventsDTO, EventIdDTO } from "./events.DTO";
+import {
+  createEventDTO,
+  getAllEventsDTO,
+  EventIdDTO,
+  updateEventDTO,
+} from "./events.DTO";
 import { ApplicationException, successHandler } from "../../utils";
 import mongoose, { Types } from "mongoose";
 
@@ -66,7 +71,50 @@ export default class EventsServices implements IEventServices {
     }
   };
 
-  updateEvent = async (req: Request, res: Response): Promise<Response> => {};
+  updateEvent = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      const user = res.locals.user;
+      const { id }: EventIdDTO = req.params as EventIdDTO;
+      const { capacity, ...data }: updateEventDTO = req.body;
+      let filter;
+      if (user.role == UserRole.ADMIN) {
+        filter = {
+          _id: id,
+        };
+      } else {
+        filter = {
+          _id: id,
+          organizerId: user._id,
+        };
+      }
+      const event = await this.eventsRepo.findOne({ filter });
+
+      if (!event) {
+        throw new ApplicationException("Event not found or unavailable", 409);
+      }
+      if (capacity && capacity < event.bookedSeats) {
+        throw new ApplicationException(
+          "Capacity cannot be less than booked seats",
+          400,
+        );
+      }
+      const updatedEvent = await this.eventsRepo.updateOne({
+        filter,
+        data: {
+          data,
+          capacity,
+        },
+      });
+      return successHandler({
+        res,
+        data: updatedEvent,
+        status: 200,
+        msg: "Event updated successfully",
+      });
+    } catch (error) {
+      throw error;
+    }
+  };
 
   deleteEvent = async (req: Request, res: Response): Promise<Response> => {
     const session = await mongoose.startSession();
@@ -89,9 +137,12 @@ export default class EventsServices implements IEventServices {
       }
 
       await session.withTransaction(async () => {
-        const event = await this.eventsRepo.getEventsWithBookings({filter,session})
+        const event = await this.eventsRepo.getEventsWithBookings({
+          filter,
+          session,
+        });
 
-        if (event.status  === EventStatus.CANCELLED) {
+        if (event.status === EventStatus.CANCELLED) {
           throw new ApplicationException("Event is already cancelled", 409);
         }
 
@@ -186,7 +237,41 @@ export default class EventsServices implements IEventServices {
       throw error;
     }
   };
-getEventBookings = async (req: Request, res: Response): Promise<Response> =>{}
+  getEventBookings = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      const { id }: EventIdDTO = req.params as EventIdDTO;
+      const user: IUser = res.locals.user;
+
+      const event = await this.eventsRepo.findById({ id });
+      if (!event) {
+        throw new ApplicationException("Event not found", 404);
+      }
+
+      const isOwner = event.organizerId.toString() === user._id.toString();
+
+      if (user.role === UserRole.ORGANIZER && !isOwner) {
+        throw new ApplicationException(
+          "You are not authorized to access this event",
+          403,
+        );
+      }
+
+      const bookings = await this.bookingRepo.find({
+        filter: {
+          eventId: new Types.ObjectId(id),
+        },
+      });
+
+      return successHandler({
+        res,
+        data: bookings,
+        status: 200,
+        msg: "Bookings fetched successfully",
+      });
+    } catch (error) {
+      throw error;
+    }
+  };
   getEventById = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { id }: EventIdDTO = req.params as EventIdDTO;

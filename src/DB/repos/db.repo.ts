@@ -27,7 +27,7 @@ export default abstract class DBRepository<T> {
     return await this.model.findOne(filter, projection, options);
   };
 
-    findOneAndUpdate = async ({
+  findOneAndUpdate = async ({
     filter,
     data,
     options,
@@ -70,7 +70,10 @@ export default abstract class DBRepository<T> {
     data: Partial<T>[];
     options?: CreateOptions;
   }): Promise<HydratedDocument<T>[]> => {
-    return (await this.model.create(data as any, options)) as unknown as HydratedDocument<T>[];
+    return (await this.model.create(
+      data as any,
+      options,
+    )) as unknown as HydratedDocument<T>[];
   };
 
   updateMany = async ({

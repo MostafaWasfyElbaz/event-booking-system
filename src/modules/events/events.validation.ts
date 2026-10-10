@@ -1,5 +1,10 @@
 import z from "zod";
-import { EventLocation, EventSortBy, EventSortOrder, EventStatus } from "../../common";
+import {
+  EventLocation,
+  EventSortBy,
+  EventSortOrder,
+  EventStatus,
+} from "../../common";
 
 export const createEventSchema = z
   .strictObject({
@@ -81,31 +86,23 @@ export const getAllEventsSchema = z
       .max(100, "Limit cannot exceed 100")
       .default(10),
 
-    title: z
-      .string()
-      .trim()
-      .min(1, "Title cannot be empty")
-      .optional(),
+    title: z.string().trim().min(1, "Title cannot be empty").optional(),
 
-    startDate: z
-      .iso.datetime({
+    startDate: z.iso
+      .datetime({
         message: "startDate must be a valid ISO datetime",
       })
       .transform((value) => new Date(value))
       .optional(),
 
-    endDate: z
-      .iso.datetime({
+    endDate: z.iso
+      .datetime({
         message: "endDate must be a valid ISO datetime",
       })
       .transform((value) => new Date(value))
       .optional(),
 
-    category: z
-      .string()
-      .trim()
-      .min(1, "Category cannot be empty")
-      .optional(),
+    category: z.string().trim().min(1, "Category cannot be empty").optional(),
 
     sortBy: z
       .enum(EventSortBy, {
@@ -145,3 +142,88 @@ export const getAllEventsSchema = z
     }
   });
 
+export const updateEventSchema = z
+  .strictObject({
+    id: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid MongoDB ObjectId"),
+    title: z
+      .string()
+      .min(3, "Title must be at least 3 characters")
+      .max(50, "Title cannot exceed 50 characters")
+      .trim()
+      .optional(),
+    description: z
+      .string()
+      .min(10, "Description must be at least 10 characters")
+      .max(500, "Description cannot exceed 500 characters")
+      .trim()
+      .optional(),
+    category: z
+      .string()
+      .min(3, "Category must be at least 3 characters")
+      .max(20, "Category cannot exceed 20 characters")
+      .trim()
+      .optional(),
+    locationType: z.enum(Object.values(EventLocation)),
+    location: z
+      .string()
+      .min(3, "Location must be at least 3 characters")
+      .max(100, "Location cannot exceed 100 characters")
+      .trim()
+      .optional(),
+    startDate: z.iso
+      .datetime()
+      .transform((val) => new Date(val))
+      .optional(),
+    endDate: z.iso
+      .datetime()
+      .transform((val) => new Date(val))
+      .optional(),
+    capacity: z
+      .number()
+      .int("Capacity must be an integer")
+      .min(1, "Capacity must be at least 1")
+      .optional(),
+    price: z.number().min(0, "Price cannot be negative").optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.endDate && data.startDate && data.endDate <= data.startDate) {
+      ctx.addIssue({
+        code: "custom",
+        message: "End date must be after start date",
+        path: ["endDate"],
+      });
+    }
+
+    if (data.startDate && new Date(data.startDate) < new Date()) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Start date must be in the future",
+        path: ["startDate"],
+      });
+    }
+
+    if (data.endDate && new Date(data.endDate) < new Date()) {
+      ctx.addIssue({
+        code: "custom",
+        message: "End date must be in the future",
+        path: ["endDate"],
+      });
+    }
+    if (
+      !data.startDate &&
+      !data.endDate &&
+      !data.category &&
+      !data.capacity &&
+      !data.description &&
+      !data.location &&
+      !data.locationType &&
+      !data.price &&
+      !data.title
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "At least one field must be provided",
+        path: ["startDate"],
+      });
+    }
+  });
