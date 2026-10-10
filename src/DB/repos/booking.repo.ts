@@ -74,6 +74,14 @@ export default class BookingsRepo
       }
 
       return createdBooking;
+    } catch (error: any) {
+      if (error?.code === 11000 || error?.errorResponse?.code === 11000) {
+        throw new ApplicationException(
+          "You already have an active booking for this event",
+          409,
+        );
+      }
+      throw error;
     } finally {
       await session.endSession();
     }
@@ -131,7 +139,7 @@ export default class BookingsRepo
         await this.eventRepo.cancelSeats({ eventId, quantity, session });
       });
     } catch (error) {
-      error;
+      throw error;
     } finally {
       await session.endSession();
     }
