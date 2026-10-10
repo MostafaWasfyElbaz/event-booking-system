@@ -163,7 +163,7 @@ export const updateEventSchema = z
       .max(20, "Category cannot exceed 20 characters")
       .trim()
       .optional(),
-    locationType: z.enum(Object.values(EventLocation)),
+    locationType: z.enum(Object.values(EventLocation)).optional(),
     location: z
       .string()
       .min(3, "Location must be at least 3 characters")

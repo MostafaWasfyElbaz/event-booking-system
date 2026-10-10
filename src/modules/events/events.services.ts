@@ -98,16 +98,15 @@ export default class EventsServices implements IEventServices {
           400,
         );
       }
-      const updatedEvent = await this.eventsRepo.updateOne({
+      await this.eventsRepo.updateOne({
         filter,
         data: {
-          data,
+          ...data,
           capacity,
         },
       });
       return successHandler({
         res,
-        data: updatedEvent,
         status: 200,
         msg: "Event updated successfully",
       });

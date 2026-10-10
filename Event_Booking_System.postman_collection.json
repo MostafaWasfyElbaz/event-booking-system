@@ -1,0 +1,361 @@
+{
+  "info": {
+    "_postman_id": "e2c3498f-0fb3-4b6e-b6a4-849cb1640192",
+    "name": "Event Booking System API",
+    "description": "Comprehensive Postman Collection for Event Booking System REST APIs.\n\n### Authentication Workflow\n1. Send **Login (Organizer)** or **Login (Admin)** or **Login (User)**.\n2. The test script will automatically set the `{{accessToken}}` collection variable.\n3. Subsequent requests inherit this token automatically.\n\n### Chaining Features\n- Creating an event automatically sets `{{eventId}}`.\n- Booking an event automatically sets `{{bookingId}}`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "eventId",
+      "value": "6ac9bb0c4dd6d14e2d90d957",
+      "type": "string"
+    },
+    {
+      "key": "bookingId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"johndoe@example.com\",\n  \"password\": \"Password123!\",\n  \"rePassword\": \"Password123!\",\n  \"phone\": \"01012345678\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Registers a new user account. Role defaults to 'user'."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var res = pm.response.json();",
+                  "    if (res.data && res.data.accessToken) {",
+                  "        pm.collectionVariables.set('accessToken', res.data.accessToken);",
+                  "        console.log('User accessToken saved successfully');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user1@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticates as a regular User and automatically saves the accessToken to collection variables."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Fetches current authenticated user details using the Bearer token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "Create Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var res = pm.response.json();",
+                  "    if (res.data && res.data._id) {",
+                  "        pm.collectionVariables.set('eventId', res.data._id);",
+                  "        console.log('Created eventId saved:', res.data._id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cloud Computing Summit 2026\",\n  \"description\": \"Comprehensive deep-dive into microservices, Kubernetes, and serverless architectures.\",\n  \"category\": \"Technology\",\n  \"locationType\": \"offline\",\n  \"location\": \"Smart Village Convention Center, Giza\",\n  \"startDate\": \"2026-12-01T10:00:00.000Z\",\n  \"endDate\": \"2026-12-02T18:00:00.000Z\",\n  \"capacity\": 250,\n  \"price\": 150\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            },
+            "description": "Creates a new event. Restricted to ADMIN and ORGANIZER roles. Saves eventId automatically."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events?page=1&limit=10&sortBy=startDate&sortOrder=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (min 1, default 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (max 100, default 10)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "startDate",
+                  "description": "Field to sort by: 'startDate' | 'price'"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "asc",
+                  "description": "Sort direction: 'asc' | 'desc'"
+                },
+                {
+                  "key": "title",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by title (regex matching)"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by category"
+                }
+              ]
+            },
+            "description": "Retrieves list of published events with pagination, sorting, and available seats calculated."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}"]
+            },
+            "description": "Fetches single event details by its MongoDB ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cloud Computing Summit 2026 - Updated\",\n  \"capacity\": 300,\n  \"price\": 180,\n  \"location\": \"Smart Village Main Auditorium, Giza\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}"]
+            },
+            "description": "Partially updates an existing event. Restricted to ADMIN and the event's ORGANIZER. Capacity cannot be less than booked seats."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "bookings"]
+            },
+            "description": "Retrieves all bookings made for a specific event. Restricted to ADMIN and the owning ORGANIZER."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Event",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}"]
+            },
+            "description": "Cancels an event and automatically updates all associated bookings to CANCELLED in a MongoDB transaction. Restricted to ADMIN and ORGANIZER."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Book Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var res = pm.response.json();",
+                  "    if (res.data && res.data._id) {",
+                  "        pm.collectionVariables.set('bookingId', res.data._id);",
+                  "        console.log('Created bookingId saved:', res.data._id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "{{eventId}}"]
+            },
+            "description": "Books seats for an event. Restricted to USER role. Quantity must be between 1 and 5. Automatically atomic and saves bookingId."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "me"]
+            },
+            "description": "Retrieves all bookings created by the currently logged-in user. Restricted to USER role."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "{{bookingId}}", "cancel"]
+            },
+            "description": "Cancels a specific booking. Allowed only up to 24 hours prior to event start date. Restores event booked seats count."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
