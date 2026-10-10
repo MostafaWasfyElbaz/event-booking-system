@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { auth, validationMiddleware } from "../../middlewares";
 import { UserRole } from "../../common";
-import { createEventSchema, getAllEventsSchema, getEventByIdSchema } from "./events.validation";
+import { createEventSchema, EventIdSchema, getAllEventsSchema } from "./events.validation";
 import EventsServices from "./events.services";
 const router = Router();
 const eventsService = new EventsServices();
@@ -22,7 +22,7 @@ router.get(
 
 router.get(
   "/:id",
-  validationMiddleware(getEventByIdSchema),
+  validationMiddleware(EventIdSchema),
   auth(),
   eventsService.getEventById,
 );

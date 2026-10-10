@@ -12,6 +12,7 @@ export interface IEvent {
   startDate: Date;
   endDate: Date;
   capacity: number;
+  bookedSeats:number;
   price: number;
   organizerId: Types.ObjectId;
   status: EventStatus;

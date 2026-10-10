@@ -61,6 +61,13 @@ const eventSchema = new Schema<IEvent>(
       min: [1, "Capacity must be at least 1"],
     },
 
+    bookedSeats: {
+  type: Number,
+  required: true,
+  default: 0,
+  min: [0, "Booked seats cannot be negative"],
+},
+
     price: {
       type: Number,
       required: [true, "Price is required"],

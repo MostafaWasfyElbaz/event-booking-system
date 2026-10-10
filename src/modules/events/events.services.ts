@@ -1,18 +1,23 @@
 import { Request, Response } from "express";
 import {
   EventStatus,
+  IBookingRepo,
   IEvent,
   IEventRepo,
   IEventServices,
   IUser,
   UserRole,
 } from "../../common";
-import { EventsRepo } from "../../DB";
-import { createEventDTO, getAllEventsDTO, getEventByIdDTO } from "./events.DTO";
+import { BookingRepo, EventsRepo } from "../../DB";
+import { createEventDTO, getAllEventsDTO, EventIdDTO } from "./events.DTO";
 import { ApplicationException, successHandler } from "../../utils";
+import mongoose, { mongo, Types } from "mongoose";
 
 export default class EventsServices implements IEventServices {
-  constructor(private readonly eventsRepo: IEventRepo = new EventsRepo()) {}
+  constructor(
+    private readonly eventsRepo: IEventRepo = new EventsRepo(),
+    private readonly bookingRepo: IBookingRepo = new BookingRepo(),
+  ) {}
 
   createEvent = async (req: Request, res: Response): Promise<Response> => {
     try {
@@ -63,14 +68,59 @@ export default class EventsServices implements IEventServices {
 
   updateEvent = async (req: Request, res: Response): Promise<Response> => {};
 
-  deleteEvent = async (req: Request, res: Response): Promise<Response> => {};
+  deleteEvent = async (req: Request, res: Response): Promise<Response> => {
+    const session = await mongoose.startSession();
+
+    try {
+      const user: IUser = res.locals.user;
+      const { id }: EventIdDTO = req.params as EventIdDTO;
+      let filter;
+      if (user.role == UserRole.ADMIN) {
+        filter = {
+          _id: new Types.ObjectId(id),
+        };
+      } else if (user.role == UserRole.ORGANIZER) {
+        filter = {
+          _id: new Types.ObjectId(id),
+          organizerId: user._id,
+        };
+      } else {
+        throw new ApplicationException("Forbidden", 403);
+      }
+
+      await session.withTransaction(async () => {
+        const event = await this.eventsRepo.getEventsWithBookings({filter,session})
+
+        if (event.status === EventStatus.CANCELLED) {
+          throw new ApplicationException("Event is already cancelled", 409);
+        }
+
+        await this.eventsRepo.cancelEvent({ filter, session });
+
+        await this.bookingRepo.cancelBookingsForEvent({
+          eventId: id,
+          session,
+        });
+      });
+
+      return successHandler({
+        res,
+        status: 200,
+        msg: "Event cancelled successfully",
+      });
+    } catch (error) {
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+  };
 
   getAllEvents = async (req: Request, res: Response): Promise<Response> => {
-    try{
-      const user:IUser = res.locals.user;
+    try {
+      const user: IUser = res.locals.user;
       const {
-        page=1,
-        limit=10,
+        page = 1,
+        limit = 10,
         sortBy,
         sortOrder,
         startDate,
@@ -78,24 +128,93 @@ export default class EventsServices implements IEventServices {
         category,
         title,
       } = req.query as unknown as getAllEventsDTO;
-      const data = await this.eventsRepo.getAllEvents({user,page:Number(page),limit:Number(limit),title,category,startDate,endDate,sortBy,sortOrder})
-      
+
+      let filter: Record<string, unknown> = {};
+
+      if (user.role === UserRole.ADMIN) {
+        filter = {};
+      } else if (user.role === UserRole.ORGANIZER) {
+        filter = {
+          $or: [{ organizerId: user._id }, { status: EventStatus.PUBLISHED }],
+        };
+      } else if (user.role === UserRole.USER) {
+        filter = { status: EventStatus.PUBLISHED };
+      } else {
+        throw new ApplicationException("Forbidden", 403);
+      }
+
+      if (title) {
+        filter = {
+          $and: [filter, { title: { $regex: title, $options: "i" } }],
+        };
+      }
+
+      if (category) {
+        filter = {
+          $and: [filter, { category: { $regex: category, $options: "i" } }],
+        };
+      }
+
+      if (startDate || endDate) {
+        filter = {
+          $and: [
+            filter,
+            {
+              startDate: {
+                ...(startDate && { $gte: startDate }),
+                ...(endDate && { $lte: endDate }),
+              },
+            },
+          ],
+        };
+      }
+      const data = await this.eventsRepo.getAllEvents({
+        page: Number(page),
+        limit: Number(limit),
+        sortBy,
+        sortOrder,
+        filter,
+      });
+
       return successHandler({
         res,
         data,
         status: 200,
         msg: "Events fetched successfully",
       });
-    }catch(error){
-      throw error
+    } catch (error) {
+      throw error;
     }
   };
 
   getEventById = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const { id }: getEventByIdDTO = req.params as getEventByIdDTO;
+      const { id }: EventIdDTO = req.params as EventIdDTO;
       const user: IUser = res.locals.user;
-      const event: IEvent | null = await this.eventsRepo.getEventById(id,user)
+      const event: IEvent | null = await this.eventsRepo.findById({ id });
+
+      if (!event) {
+        throw new ApplicationException("Event not found", 404);
+      }
+
+      const isPublished = event.status === EventStatus.PUBLISHED;
+      const isOwner = event.organizerId.toString() === user._id.toString();
+
+      if (user.role === UserRole.ADMIN) {
+      } else if (user.role === UserRole.ORGANIZER) {
+        if (!isOwner && !isPublished) {
+          throw new ApplicationException(
+            "You are not authorized to access this event",
+            403,
+          );
+        }
+      } else if (user.role === UserRole.USER) {
+        if (!isPublished) {
+          throw new ApplicationException("Event not found", 404);
+        }
+      } else {
+        throw new ApplicationException("Forbidden", 403);
+      }
       return successHandler({
         res,
         data: event,

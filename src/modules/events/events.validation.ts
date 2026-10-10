@@ -58,7 +58,7 @@ export const createEventSchema = z
     }
   });
 
-export const getEventByIdSchema = z.strictObject({
+export const EventIdSchema = z.strictObject({
   id: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid MongoDB ObjectId"),
 });
 
@@ -144,3 +144,4 @@ export const getAllEventsSchema = z
       });
     }
   });
+

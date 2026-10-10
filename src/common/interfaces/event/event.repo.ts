@@ -1,29 +1,29 @@
 import { IEvent } from "../";
 import DBRepository from "../../../DB/repos/db.repo";
-import { HydratedDocument } from "mongoose";
+import { HydratedDocument, ClientSession, QueryFilter } from "mongoose";
 import { IUser } from "../user";
 import { EventSortBy, EventSortOrder } from "../../enums";
 
 export interface IEventRepo extends DBRepository<IEvent> {
-  getEventById: (id: string, user: IUser) => Promise<HydratedDocument<IEvent> | null>;
+  bookSeats: ({
+    eventId,
+    quantity,
+    session,
+  }: {
+    eventId: string;
+    quantity: number;
+    session?: ClientSession;
+  }) => Promise<HydratedDocument<IEvent>>;
   getAllEvents: ({
-    user,
+    filter,
     page,
     limit,
-    title,
-    startDate,
-    endDate,
-    category,
     sortBy,
-    sortOrder
+    sortOrder,
   }: {
-    user: IUser;
+    filter: QueryFilter<IEvent>;
     page: number;
     limit: number;
-    title?: string | undefined;
-    startDate?: Date | undefined;
-    endDate?: Date | undefined;
-    category?: string | undefined;
     sortBy?: EventSortBy;
     sortOrder?: EventSortOrder;
   }) => Promise<{
@@ -33,4 +33,18 @@ export interface IEventRepo extends DBRepository<IEvent> {
     limit: number;
     totalPages: number;
   }>;
+  cancelEvent: ({
+    session,
+    filter,
+  }: {
+    session?: ClientSession;
+    filter: QueryFilter<IEvent>;
+  }) => Promise<boolean>;
+  getEventsWithBookings: ({
+    filter,
+    session,
+  }: {
+    filter: QueryFilter<IEvent>;
+    session?: ClientSession;
+  }) => Promise<{ event: HydratedDocument<IEvent> }>;
 }

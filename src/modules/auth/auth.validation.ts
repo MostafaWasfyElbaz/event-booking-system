@@ -6,6 +6,7 @@ export const registerSchema = z
       .string()
       .min(3, "Name must be at least 3 characters")
       .max(30, "Name cannot exceed 30 characters")
+      .trim()
       .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
 
     email: z.email("Please provide a valid email"),
@@ -13,6 +14,7 @@ export const registerSchema = z
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
+      .trim()
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
         "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
@@ -20,10 +22,12 @@ export const registerSchema = z
 
     rePassword: z
       .string()
-      .min(8, "Repeat password must be at least 8 characters"),
+      .min(8, "Repeat password must be at least 8 characters")
+      .trim(),
 
     phone: z
       .string()
+      .trim()
       .regex(
         /^01[0125][0-9]{8}$/,
         "Please provide a valid Egyptian phone number",
@@ -36,5 +40,5 @@ export const registerSchema = z
 
 export const loginSchema = z.strictObject({
   email: z.email("Please provide a valid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters").trim(),
 });

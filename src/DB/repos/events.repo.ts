@@ -1,5 +1,18 @@
-import { HydratedDocument, Model } from "mongoose";
-import { EventSortBy, EventSortOrder, EventStatus, IEvent, IEventRepo, IUser, UserRole } from "../../common";
+import mongoose, {
+  ClientSession,
+  HydratedDocument,
+  Model,
+  QueryFilter,
+} from "mongoose";
+import {
+  EventSortBy,
+  EventSortOrder,
+  EventStatus,
+  IEvent,
+  IEventRepo,
+  IUser,
+  UserRole,
+} from "../../common";
 import DBRepository from "./db.repo";
 import { Event } from "../models";
 import { ApplicationException } from "../../utils";
@@ -12,60 +25,58 @@ export default class EventsRepo
     super(model);
   }
 
-  getEventById = async (
-    id: string,
-    user: IUser,
-  ): Promise<HydratedDocument<IEvent> | null> => {
-    const event = await this.findById({ id });
-
-    if (!event) {
-      throw new ApplicationException("Event not found", 404);
-    }
-
-    const isPublished = event.status === EventStatus.PUBLISHED;
-    const isOwner = event.organizerId.toString() === user._id.toString();
-
-    if (user.role === UserRole.ADMIN) {
-      return event;
-    } else if (user.role === UserRole.ORGANIZER) {
-      if (!isOwner && !isPublished) {
+  bookSeats = async ({
+    eventId,
+    quantity,
+    session,
+  }: {
+    eventId: string;
+    quantity: number;
+    session?: ClientSession;
+  }) => {
+    try {
+      const event = await this.findOneAndUpdate({
+        filter: {
+          _id: eventId,
+          status: EventStatus.PUBLISHED,
+          startDate: { $gt: new Date() },
+          $expr: {
+            $lte: [{ $add: ["$bookedSeats", quantity] }, "$capacity"],
+          },
+        },
+        data: {
+          $inc: { bookedSeats: quantity },
+        },
+        options: {
+          new: true,
+          ...(session && { session }),
+        },
+      });
+      if (!event) {
         throw new ApplicationException(
-          "You are not authorized to access this event",
-          403,
+          "Event not found, unavailable, or insufficient seats",
+          409,
         );
       }
 
       return event;
-    } else if (user.role === UserRole.USER) {
-      if (!isPublished) {
-        throw new ApplicationException("Event not found", 404);
-      }
-      return event;
+    } catch (error) {
+      throw error;
     }
-
-    throw new ApplicationException("Forbidden", 403);
   };
 
   getAllEvents = async ({
-    user,
     page,
     limit,
-    title,
-    startDate,
-    endDate,
-    category,
     sortBy = EventSortBy.START_DATE,
     sortOrder = EventSortOrder.ASC,
+    filter,
   }: {
-    user: IUser;
     page: number;
     limit: number;
-    title?: string | undefined;
-    startDate?: Date | undefined;
-    endDate?: Date | undefined;
-    category?: string | undefined;
     sortBy?: EventSortBy;
     sortOrder?: EventSortOrder;
+    filter: QueryFilter<IEvent>;
   }): Promise<{
     events: HydratedDocument<IEvent>[];
     total: number;
@@ -73,72 +84,107 @@ export default class EventsRepo
     limit: number;
     totalPages: number;
   }> => {
-    let filter: Record<string, unknown> = {};
-
-    if (user.role === UserRole.ADMIN) {
-      filter = {}
-    } else if (user.role === UserRole.ORGANIZER) {
-      filter = {
-        $or: [{ organizerId: user._id }, { status: EventStatus.PUBLISHED }],
-      };
-    } else if (user.role === UserRole.USER) {
-      filter = { status: EventStatus.PUBLISHED };
-    } else {
-      throw new ApplicationException("Forbidden", 403);
-    }
-
-    if (title) {
-      filter = {
-        $and: [filter, { title: { $regex: title, $options: "i" } }],
-      };
-    }
-
-    if (category) {
-      filter = {
-        $and: [filter, { category: { $regex: category, $options: "i" } }],
-      };
-    }
-
-    if (startDate || endDate) {
-      filter = {
-        $and: [
-          filter,
+    try {
+      const [result] = await this.aggregate({
+        pipeline: [
           {
-            startDate: {
-              ...(startDate && { $gte: startDate }),
-              ...(endDate && { $lte: endDate }),
+            $match: filter,
+          },
+          {
+            $facet: {
+              events: [
+                {
+                  $addFields: {
+                    availableSeats: {
+                      $subtract: ["$capacity", "$bookedSeats"],
+                    },
+                  },
+                },
+                {
+                  $sort: {
+                    [sortBy]: sortOrder === EventSortOrder.ASC ? 1 : -1,
+                    _id: 1,
+                  },
+                },
+                { $skip: (page - 1) * limit },
+                { $limit: limit },
+              ],
+              metadata: [{ $count: "total" }],
             },
           },
         ],
-      };
-    }
+      });
 
-    const [result] = await this.aggregate({
-      pipeline: [
-        {
-          $match: filter,
-        },
-        {
-          $facet: {
-            events: [
-              { $sort: { [sortBy]: sortOrder === EventSortOrder.ASC ? 1 : -1, _id: 1 } },
-              { $skip: (page - 1) * limit },
-              { $limit: limit },
-            ],
-            metadata: [{ $count: "total" }],
+      const total = result?.metadata[0]?.total ?? 0;
+
+      return {
+        events: result?.events ?? [],
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getEventsWithBookings = async ({
+    filter,
+    session,
+  }: {
+    filter: QueryFilter<IEvent>;
+    session?: ClientSession;
+  }): Promise<{ event: HydratedDocument<IEvent> }> => {
+    try {
+      const [event] = await this.aggregate({
+        pipeline: [
+          {
+            $match: filter,
           },
+          {
+            $lookup: {
+              from: "bookings",
+              localField: "_id",
+              foreignField: "eventId",
+              as: "bookings",
+            },
+          },
+        ],
+        options: { ...(session && { session }) },
+      });
+
+      if (!event) {
+        throw new ApplicationException("Event not found", 404);
+      }
+
+      return event;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  cancelEvent = async ({
+    session,
+    filter,
+  }: {
+    session?: ClientSession;
+    filter: QueryFilter<IEvent>;
+  }): Promise<boolean> => {
+    const result = await this.updateOne({
+      filter: {
+        ...filter,
+        status: { $ne: EventStatus.CANCELLED },
+      },
+      data: {
+        $set: {
+          status: EventStatus.CANCELLED,
+          bookedSeats: 0,
         },
-      ],
+      },
+      options: { ...(session && { session }) },
     });
 
-    const total = result?.metadata[0]?.total ?? 0;
-
-    return {
-      events: result?.events ?? [],
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return result.modifiedCount > 0;
   };
 }

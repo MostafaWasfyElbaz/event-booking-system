@@ -1,7 +1,8 @@
 import {
+  AggregateOptions,
   CreateOptions,
   DeleteResult,
-  FilterQuery,
+  QueryFilter,
   FlattenMaps,
   HydratedDocument,
   Model,
@@ -11,7 +12,6 @@ import {
   UpdateQuery,
   UpdateResult,
 } from "mongoose";
-import { AggregateOptions } from "node:sqlite";
 
 export default abstract class DBRepository<T> {
   constructor(protected readonly model: Model<T>) {}
@@ -20,11 +20,23 @@ export default abstract class DBRepository<T> {
     projection,
     options,
   }: {
-    filter: FilterQuery<T>;
+    filter: QueryFilter<T>;
     projection?: ProjectionType<T>;
     options?: QueryOptions<T>;
   }): Promise<HydratedDocument<T> | null> => {
     return await this.model.findOne(filter, projection, options);
+  };
+
+    findOneAndUpdate = async ({
+    filter,
+    data,
+    options,
+  }: {
+    filter: QueryFilter<T>;
+    data: UpdateQuery<T>;
+    options?: QueryOptions<T>;
+  }): Promise<HydratedDocument<T> | null> => {
+    return await this.model.findOneAndUpdate(filter, data, options);
   };
 
   findById = async ({
@@ -44,7 +56,7 @@ export default abstract class DBRepository<T> {
     projection,
     options,
   }: {
-    filter: FilterQuery<T>;
+    filter: QueryFilter<T>;
     projection?: ProjectionType<T>;
     options?: QueryOptions<T>;
   }): Promise<HydratedDocument<T>[] | []> => {
@@ -57,8 +69,8 @@ export default abstract class DBRepository<T> {
   }: {
     data: Partial<T>[];
     options?: CreateOptions;
-  }): Promise<T[]> => {
-    return await this.model.create(data, options);
+  }): Promise<HydratedDocument<T>[]> => {
+    return (await this.model.create(data as any, options)) as unknown as HydratedDocument<T>[];
   };
 
   updateMany = async ({
@@ -66,7 +78,7 @@ export default abstract class DBRepository<T> {
     options,
     data,
   }: {
-    filter: FilterQuery<T>;
+    filter: QueryFilter<T>;
     options?: Record<string, any>;
     data: UpdateQuery<HydratedDocument<T>>;
   }): Promise<UpdateResult> => {
@@ -78,7 +90,7 @@ export default abstract class DBRepository<T> {
     options,
     data,
   }: {
-    filter: FilterQuery<T>;
+    filter: QueryFilter<T>;
     options?: Record<string, any>;
     data: UpdateQuery<HydratedDocument<T>>;
   }): Promise<UpdateResult> => {
@@ -89,7 +101,7 @@ export default abstract class DBRepository<T> {
     filter,
     options,
   }: {
-    filter: FilterQuery<T>;
+    filter: QueryFilter<T>;
     options?: Record<string, any>;
   }): Promise<DeleteResult> => {
     return await this.model.deleteOne(filter, options);
@@ -99,13 +111,13 @@ export default abstract class DBRepository<T> {
     filter,
     options,
   }: {
-    filter: FilterQuery<T>;
+    filter: QueryFilter<T>;
     options?: Record<string, any>;
   }): Promise<DeleteResult> => {
     return await this.model.deleteMany(filter, options);
   };
 
-  aggregate =  ({
+  aggregate = ({
     pipeline,
     options,
   }: {
