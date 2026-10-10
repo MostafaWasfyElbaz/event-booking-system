@@ -5,7 +5,6 @@ import { User, Event, Booking } from "./models";
 import { UserRole, EventLocation, EventStatus } from "../common";
 import { createHash } from "../utils/hash";
 
-// Load environment variables from config/.env
 dotenv.config({
   path: path.resolve("./config/.env"),
 });
@@ -30,10 +29,8 @@ async function seed() {
     await User.deleteMany({});
     console.log("✅ Existing data cleared");
 
-    // 1. Hash default password
     const hashedPassword = await createHash(DEFAULT_PASSWORD);
 
-    // 2. Seed Users with different roles (Admin, Organizers, Users)
     console.log("👤 Seeding users...");
     const usersToCreate = [
       {
@@ -95,7 +92,6 @@ async function seed() {
       );
     });
 
-    // Extract organizers to assign events to them
     const organizers = createdUsers.filter(
       (user) => user.role === UserRole.ORGANIZER,
     );
@@ -103,7 +99,6 @@ async function seed() {
     const org2 = organizers[1]!._id;
     const org3 = organizers[2]!._id;
 
-    // Helper date generator relative to now
     const now = new Date();
     const addDays = (days: number, hours = 0): Date => {
       const d = new Date(
@@ -112,10 +107,8 @@ async function seed() {
       return d;
     };
 
-    // 3. Seed 20 Events with different statuses and location types
     console.log("\n📅 Seeding 20 events with diverse statuses & locations...");
     const eventsToCreate = [
-      // --- PUBLISHED & ONLINE (5) ---
       {
         title: "AI and Machine Learning Summit 2026",
         description:
@@ -187,7 +180,6 @@ async function seed() {
         status: EventStatus.PUBLISHED,
       },
 
-      // --- PUBLISHED & OFFLINE (5) ---
       {
         title: "Cairo Tech Expo and Career Fair",
         description:
@@ -259,7 +251,6 @@ async function seed() {
         status: EventStatus.PUBLISHED,
       },
 
-      // --- FINISHED & ONLINE (2) ---
       {
         title: "Global E-Commerce Growth Summit",
         description:
@@ -289,7 +280,6 @@ async function seed() {
         status: EventStatus.FINISHED,
       },
 
-      // --- FINISHED & OFFLINE (3) ---
       {
         title: "Cybersecurity Defense Forum",
         description:
@@ -333,7 +323,6 @@ async function seed() {
         status: EventStatus.FINISHED,
       },
 
-      // --- CANCELLED & ONLINE (3) ---
       {
         title: "Blockchain and DeFi Developers Day",
         description:
@@ -377,7 +366,6 @@ async function seed() {
         status: EventStatus.CANCELLED,
       },
 
-      // --- CANCELLED & OFFLINE (2) ---
       {
         title: "Cairo Outdoor Food Festival",
         description:

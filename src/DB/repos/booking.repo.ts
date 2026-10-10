@@ -80,23 +80,63 @@ export default class BookingsRepo
   };
 
   cancelBookingsForEvent = async ({
-  eventId,
-  session,
-}: {
-  eventId: string;
-  session?: ClientSession;
-}): Promise<UpdateResult> => {
-  return this.updateMany({
-    filter: {
-      eventId,
-      status: { $ne: BookingStatus.CANCELLED },
-    },
-    data: {
-      $set: {
-        status: BookingStatus.CANCELLED,
+    eventId,
+    session,
+  }: {
+    eventId: string;
+    session?: ClientSession;
+  }): Promise<UpdateResult> => {
+    return this.updateMany({
+      filter: {
+        eventId,
+        status: { $ne: BookingStatus.CANCELLED },
       },
-    },
-    options: { session },
-  });
-};
+      data: {
+        $set: {
+          status: BookingStatus.CANCELLED,
+        },
+      },
+      options: { session },
+    });
+  };
+
+  cancelBooking = async ({
+    bookingId,
+    userId,
+    eventId,
+    quantity
+  }: {
+    bookingId: string;
+    userId: string;
+    eventId: string;
+    quantity: number
+  }):Promise<void> => {
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const booking = await this.findOneAndUpdate({
+          filter: {
+            _id: bookingId,
+            userId,
+            status: { $ne: BookingStatus.CANCELLED },
+          },
+          data: {
+            $set: { status: BookingStatus.CANCELLED },
+          },
+          options: { new: true, ...(session && { session }) },
+        });
+         if (!booking) {
+        throw new ApplicationException(
+          "Booking could not be cancelled",
+          409,
+        );
+      }
+       await this.eventRepo.cancelSeats({eventId,quantity,session})
+      });
+    } catch (error) {
+      error;
+    } finally {
+      await session.endSession();
+    }
+  };
 }

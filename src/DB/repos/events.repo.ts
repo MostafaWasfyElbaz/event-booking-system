@@ -10,6 +10,7 @@ import {
   EventStatus,
   IEvent,
   IEventRepo,
+  IEventWithBookings,
   IUser,
   UserRole,
 } from "../../common";
@@ -135,7 +136,7 @@ export default class EventsRepo
   }: {
     filter: QueryFilter<IEvent>;
     session?: ClientSession;
-  }): Promise<{ event: HydratedDocument<IEvent> }> => {
+  }): Promise<IEventWithBookings>=> {
     try {
       const [event] = await this.aggregate({
         pipeline: [
@@ -187,4 +188,37 @@ export default class EventsRepo
 
     return result.modifiedCount > 0;
   };
+
+  cancelSeats = async ({
+  eventId,
+  quantity,
+  session,
+}: {
+  eventId: string;
+  quantity: number;
+  session?: ClientSession;
+}): Promise<IEvent> => {
+  const event = await this.findOneAndUpdate({
+    filter: {
+      _id: eventId,
+      bookedSeats: { $gte: quantity },
+    },
+    data: {
+      $inc: { bookedSeats: -quantity },
+    },
+    options: {
+      ...(session && { session }),
+      new: true,
+    },
+  });
+
+  if (!event) {
+    throw new ApplicationException(
+      "Unable to release booked seats",
+      409,
+    );
+  }
+
+  return event;
+};
 }

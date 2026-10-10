@@ -1,5 +1,9 @@
 import z from "zod";
 
+export const bookingIdSchema = z.strictObject({
+    id: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid MongoDB ObjectId"),
+})
+
 export const createBookingSchema = z.strictObject({
     id: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid MongoDB ObjectId"),
     quantity: z
@@ -10,3 +14,4 @@ export const createBookingSchema = z.strictObject({
     .min(1, "Quantity must be at least 1")
     .max(5, "Quantity cannot exceed 5"),
 })
+

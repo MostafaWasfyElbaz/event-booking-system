@@ -1,4 +1,4 @@
-import { IEvent } from "../";
+import { IEvent, IEventWithBookings } from "./event.model";
 import DBRepository from "../../../DB/repos/db.repo";
 import { HydratedDocument, ClientSession, QueryFilter } from "mongoose";
 import { IUser } from "../user";
@@ -40,11 +40,20 @@ export interface IEventRepo extends DBRepository<IEvent> {
     session?: ClientSession;
     filter: QueryFilter<IEvent>;
   }) => Promise<boolean>;
+  cancelSeats: ({
+    eventId,
+    quantity,
+    session,
+  }: {
+    eventId: string;
+    quantity: number;
+    session?: ClientSession;
+  }) => Promise<IEvent>;
   getEventsWithBookings: ({
     filter,
     session,
   }: {
     filter: QueryFilter<IEvent>;
     session?: ClientSession;
-  }) => Promise<{ event: HydratedDocument<IEvent> }>;
+  }) => Promise<IEventWithBookings>;
 }

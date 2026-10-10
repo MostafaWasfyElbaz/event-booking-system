@@ -11,7 +11,7 @@ import {
 import { BookingRepo, EventsRepo } from "../../DB";
 import { createEventDTO, getAllEventsDTO, EventIdDTO } from "./events.DTO";
 import { ApplicationException, successHandler } from "../../utils";
-import mongoose, { mongo, Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 export default class EventsServices implements IEventServices {
   constructor(
@@ -91,7 +91,7 @@ export default class EventsServices implements IEventServices {
       await session.withTransaction(async () => {
         const event = await this.eventsRepo.getEventsWithBookings({filter,session})
 
-        if (event.status === EventStatus.CANCELLED) {
+        if (event.status  === EventStatus.CANCELLED) {
           throw new ApplicationException("Event is already cancelled", 409);
         }
 
@@ -186,7 +186,7 @@ export default class EventsServices implements IEventServices {
       throw error;
     }
   };
-
+getEventBookings = async (req: Request, res: Response): Promise<Response> =>{}
   getEventById = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { id }: EventIdDTO = req.params as EventIdDTO;
