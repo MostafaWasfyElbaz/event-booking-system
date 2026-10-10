@@ -587,4 +587,4 @@ The seed script clears the User, Event, and Booking collections before seeding. 
 
 ## License
 
-The package currently declares the `ISC` license. If you distribute this project, retain the applicable license notice and ensure the repository includes a license file if required.
+The package currently declares the `ISC` license.
